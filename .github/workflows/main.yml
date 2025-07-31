@@ -1,0 +1,74 @@
+name: Backend Chat CI/CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Environment name
+    environment: Production
+    steps:
+    - name: Deploy using ssh
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY_FOR_VPS }}
+        port: 22
+        script: |
+          echo "🚀 Starting deployment..."
+          cd /var/www/chat_online/be_chat
+          
+          echo "📥 Pulling latest code..."
+          git checkout main
+          git fetch origin
+          git pull origin main
+
+           # --- BẮT ĐẦU PHẦN TẠO FILE .env ---
+          echo "📝 Creating .env file..."
+
+          # Xóa file .env cũ nếu tồn tại để tránh lỗi
+          rm -f .env 
+          
+          # Ghi từng biến môi trường vào file .env
+          # Sử dụng echo và redirect vào file .env
+          # Lưu ý: Các secrets sẽ được truyền từ GitHub Secrets vào script này
+          echo "NODE_ENV=${{ vars.NODE_ENV }}" >> .env
+          echo "PORT=${{ vars.PORT }}" >> .env
+          echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+          echo "JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}" >> .env
+          echo "JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}" >> .env
+          
+          echo "✅ .env file created successfully."
+
+
+          
+          # Backup database trước khi deploy (nếu container đang chạy)
+          echo "💾 Creating database backup..."
+          if docker ps -q -f name=chat-backend-container | grep -q .; then
+            docker exec chat-backend-container cp /app/data/database.sqlite /app/data/backup_before_deploy.sqlite || echo "Backup failed, continuing..."
+          fi
+          
+          # Stop và remove container cũ (giữ nguyên volume)
+          echo "🛑 Stopping old container..."
+          docker stop chat-backend-container || true
+          docker rm chat-backend-container || true
+          
+          # Build image mới
+          echo "🔨 Building new image..."
+          docker build -t chat-backend:latest .
+          
+          # Tạo volume nếu chưa tồn tại
+          echo "📦 Ensuring volume exists..."
+          docker volume create backend_data || echo "Volume already exists"
+          
+          # Start container mới với volume mount
+          echo "🚀 Starting new container..."
+          docker run -d \
+            --name chat-backend-container \
+            -p 8080:8080 \
+            -v backend_data:/app/data \
+            --restart unless-stopped \
+            chat-backend:latest
