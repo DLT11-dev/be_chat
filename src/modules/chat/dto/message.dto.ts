@@ -27,6 +27,8 @@ export class MessageResponseDto {
   senderId: number;
   receiverId: number;
   isRead: boolean;
+  isRecalled: boolean;
+  recalledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   sender?: {

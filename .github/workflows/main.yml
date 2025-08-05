@@ -56,6 +56,10 @@ jobs:
           docker stop chat-backend-container || true
           docker rm chat-backend-container || true
           
+          # Xóa image cũ để tiết kiệm dung lượng
+          echo "🗑️ Removing old image..."
+          docker rmi chat-backend:latest || true
+          
           # Build image mới
           echo "🔨 Building new image..."
           docker build -t chat-backend:latest .

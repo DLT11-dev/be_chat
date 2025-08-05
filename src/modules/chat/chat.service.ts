@@ -101,6 +101,38 @@ export class ChatService {
     await this.messageRepository.remove(message);
   }
 
+  async recallMessage(messageId: string, userId: number): Promise<void> {
+    const message = await this.messageRepository.findOne({
+      where: { id: messageId, senderId: userId }
+    });
+
+    if (!message) {
+      throw new NotFoundException('Tin nhắn không tồn tại hoặc bạn không có quyền thu hồi');
+    }
+
+    // Kiểm tra xem tin nhắn đã được đọc chưa
+    if (message.isRead) {
+      throw new NotFoundException('Không thể thu hồi tin nhắn đã được đọc');
+    }
+
+    // Kiểm tra thời gian (chỉ cho phép thu hồi trong vòng 5 phút)
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    if (message.createdAt < fiveMinutesAgo) {
+      throw new NotFoundException('Chỉ có thể thu hồi tin nhắn trong vòng 5 phút');
+    }
+
+    message.isRecalled = true;
+    message.recalledAt = new Date();
+    await this.messageRepository.save(message);
+  }
+
+  async getMessageById(messageId: string): Promise<Message | null> {
+    return this.messageRepository.findOne({
+      where: { id: messageId },
+      relations: ['sender', 'receiver']
+    });
+  }
+
   async getRecentConversations(userId: number): Promise<any[]> {
     const conversations = await this.messageRepository
       .createQueryBuilder('message')
@@ -139,6 +171,8 @@ export class ChatService {
       senderId: message.senderId,
       receiverId: message.receiverId,
       isRead: message.isRead,
+      isRecalled: message.isRecalled,
+      recalledAt: message.recalledAt,
       createdAt: message.createdAt,
       updatedAt: message.updatedAt,
       sender: message.sender ? {

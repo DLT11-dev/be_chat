@@ -202,6 +202,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage('recall_message')
+  async handleRecallMessage(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { messageId: string },
+  ) {
+    if (!client.userId) {
+      return { error: 'Unauthorized' };
+    }
+
+    try {
+      await this.chatService.recallMessage(data.messageId, client.userId);
+      
+      // Gửi sự kiện thu hồi tin nhắn đến tất cả user trong cuộc trò chuyện
+      const message = await this.chatService.getMessageById(data.messageId);
+      if (message) {
+        const roomId = this.getConversationRoomId(message.senderId, message.receiverId);
+        this.server.to(roomId).emit('message_recalled', { 
+          messageId: data.messageId,
+          senderId: message.senderId,
+          receiverId: message.receiverId
+        });
+      }
+      
+      client.emit('message_recall_success', { messageId: data.messageId });
+    } catch (error) {
+      client.emit('error', { message: error.message });
+    }
+  }
+
   // Helper method để tạo room ID cho cuộc trò chuyện
   private getConversationRoomId(userId1: number, userId2: number): string {
     const sortedIds = [userId1, userId2].sort((a, b) => a - b);

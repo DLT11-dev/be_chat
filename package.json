@@ -14,7 +14,7 @@
     "start:prod": "node dist/main",
     "typeorm": "typeorm-ts-node-commonjs",
     "migration:generate": "npm run typeorm -- migration:generate -d src/database/data-source.ts",
-    "migration:run": "npm run typeorm -- migration:run -d src/database/data-source.ts",
+    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
     "migration:revert": "npm run typeorm -- migration:revert -d src/database/data-source.ts",
     "init-db": "npm run migration:run",
     "db:backup": "chmod +x scripts/backup-db.sh && ./scripts/backup-db.sh",

@@ -75,6 +75,15 @@ export class ChatController {
     return this.chatService.deleteMessage(messageId, req.user.id);
   }
 
+  @Put('messages/:messageId/recall')
+  @ApiResponse({ status: 200, description: 'Tin nhắn đã được thu hồi' })
+  async recallMessage(
+    @Param('messageId') messageId: string,
+    @Request() req,
+  ): Promise<void> {
+    return this.chatService.recallMessage(messageId, req.user.id);
+  }
+
   @Get('conversations')
   @ApiOperation({ summary: 'Lấy danh sách cuộc trò chuyện gần đây' })
   @ApiResponse({ status: 200, description: 'Danh sách cuộc trò chuyện' })
