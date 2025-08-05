@@ -61,11 +61,17 @@ export class UsersService {
     });
   }
 
-  async findAllExceptCurrent(currentUserId: number): Promise<UserResponseDto[]> {
-    const users = await this.usersRepository.find({
-      where: { id: { not: currentUserId } as any },
-      select: ['id', 'username', 'email', 'createdAt', 'updatedAt']
-    });
+  async findAllExceptCurrent(currentUserId: number, limit: number = 20, offset: number = 0): Promise<UserResponseDto[]> {
+    
+    const users = await this.usersRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.username', 'user.email', 'user.createdAt', 'user.updatedAt'])
+      .where('user.id != :currentUserId', { currentUserId })
+      .orderBy('user.username', 'ASC')
+      .skip(offset)
+      .take(limit)
+      .getMany();
+    
     return users;
   }
 

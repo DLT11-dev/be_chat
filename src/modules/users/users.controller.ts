@@ -36,8 +36,12 @@ export class UsersController {
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  async findAll(@Request() req: RequestModel): Promise<UserResponseDto[]> {
-    return this.usersService.findAllExceptCurrent(req.user.id);
+  async findAll(
+    @Request() req: RequestModel,
+    @Query('limit') limit: number = 20,
+    @Query('offset') offset: number = 0
+  ): Promise<UserResponseDto[]> {
+    return this.usersService.findAllExceptCurrent(req.user.id, limit, offset);
   }
 
   @Get('search')
