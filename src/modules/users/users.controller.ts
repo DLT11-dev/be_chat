@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
+import { CreateUserDto, PaginationQueryDto, SearchQueryDto, UpdateUserDto, UserResponseDto } from './dto/user.dto';
 import { RequestModel } from '@/common/models/request.model';
 import { JwtAuthGuard } from '@/modules/auth/guards/jwt-auth.guard';
 
@@ -33,16 +33,15 @@ export class UsersController {
     return this.usersService.findById(req.user.id);
   }
 
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
-  async findAll(
-    @Request() req: RequestModel,
-    @Query('limit') limit: number = 20,
-    @Query('offset') offset: number = 0
-  ): Promise<UserResponseDto[]> {
-    return this.usersService.findAllExceptCurrent(req.user.id, limit, offset);
-  }
+@Get()
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
+async findAll(
+  @Request() req: RequestModel,
+  @Query() query: PaginationQueryDto
+): Promise<UserResponseDto[]> {
+  return this.usersService.findAllExceptCurrent(req.user.id, query.limit, query.offset);
+}
 
   @Get('search')
   @UseGuards(JwtAuthGuard)
@@ -50,11 +49,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Tìm kiếm người dùng' })
   @ApiResponse({ status: 200, description: 'Danh sách người dùng tìm được', type: [UserResponseDto] })
   async searchUsers(
-    @Query('q') query: string,
-    @Query('limit') limit: number = 10,
+    @Query() query: SearchQueryDto,
     @Request() req: RequestModel
   ): Promise<UserResponseDto[]> {
-    return this.usersService.searchUsers(query, limit, req.user.id);
+    return this.usersService.searchUsers(query.q, query.limit, req.user.id);
   }
 
   @Patch(':id')

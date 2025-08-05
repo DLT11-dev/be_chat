@@ -1,7 +1,8 @@
 import { Role } from '@/common/enum/role';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, IsNotEmpty, IsEnum, IsOptional, IsBoolean, ValidateIf } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsNotEmpty, IsEnum, IsOptional, IsBoolean, ValidateIf, Min, IsNumber } from 'class-validator';
 import { PrimaryGeneratedColumn } from 'typeorm';
+import { Type } from 'class-transformer';
 
 export class CreateUserDto {
   @ApiProperty({ description: 'username', example: 'username123' })
@@ -78,6 +79,37 @@ export class UserResponseDto {
     @IsEmail()
     email: string;
 }
+
+
+export class PaginationQueryDto {
+  @ApiProperty({ description: 'Số lượng items trên mỗi trang', example: 20, required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit: number = 20;
+
+  @ApiProperty({ description: 'Số items bỏ qua', example: 0, required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  offset: number = 0;
+}
+
+export class SearchQueryDto {
+  @ApiProperty({ description: 'Từ khóa tìm kiếm', example: 'john', required: true })
+  @IsString()
+  @IsNotEmpty()
+  q: string;
+
+  @ApiProperty({ description: 'Số lượng kết quả tối đa', example: 20, required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit: number = 20;
+} 
   
 
 
